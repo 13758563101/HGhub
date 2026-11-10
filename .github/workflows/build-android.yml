@@ -67,6 +67,30 @@ jobs:
       - name: Build Android
         run: pnpm android:build
 
+      - name: Sign APK for direct installation
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="$(find src-tauri/gen/android/app/build/outputs/apk -type f -name '*-unsigned.apk' -print -quit)"
+          test -n "$apk"
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}"
+          apksigner="$(find "$sdk_root/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$apksigner"
+          keystore="$RUNNER_TEMP/hghub-debug.keystore"
+          keytool -genkeypair -v \
+            -keystore "$keystore" \
+            -storepass android -keypass android \
+            -alias androiddebugkey -keyalg RSA -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+          signed="${apk%-unsigned.apk}-signed.apk"
+          "$apksigner" sign \
+            --ks "$keystore" \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out "$signed" "$apk"
+          "$apksigner" verify --verbose "$signed"
+
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
