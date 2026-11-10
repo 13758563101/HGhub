@@ -1,69 +1,69 @@
 name: Build Android APK
- 
-  on:
-    workflow_dispatch:
-    push:
-      tags:
-        - "v*"
- 
-  jobs:
-    android:
-      runs-on: ubuntu-24.04
-      permissions:
-        contents: read
- 
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
- 
-        - name: Setup pnpm
-          uses: pnpm/action-setup@v4
-          with:
-            version: 10
- 
-        - name: Setup Node
-          uses: actions/setup-node@v4
-          with:
-            node-version: 22
-            cache: pnpm
-            
-        - name: Setup Java
-          uses: actions/setup-java@v4
-          with:
-            distribution: temurin
-            java-version: "17"
- 
-        - name: Setup Android SDK
-          uses: android-actions/setup-android@v3
- 
-        - name: Install Android SDK and NDK
-          run: |
-            sdkmanager "platform-tools" \
-              "platforms;android-35" \
-              "build-tools;35.0.0" \
-              "ndk;27.2.12479018"
-            echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
- 
-        - name: Setup Rust
-          uses: dtolnay/rust-toolchain@stable
-          with:
-            targets: aarch64-linux-android
- 
-        - name: Install dependencies
-          run: pnpm install --frozen-lockfile
- 
-        - name: Initialize Android project
-          run: pnpm tauri android init --ci
- 
-        - name: Build Android
-          run: pnpm android:build
- 
-        - name: Upload Android artifacts
-          uses: actions/upload-artifact@v4
-          with:
-            name: HGhub-Android
-            path: |
-              src-tauri/gen/android/app/build/outputs/apk/**/*.apk
-              src-tauri/gen/android/app/build/outputs/bundle/**/*.aab
-            if-no-files-found: error
 
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK and NDK
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;27.2.12479018"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Initialize Android project
+        run: pnpm tauri android init --ci
+
+      - name: Build Android
+        run: pnpm android:build
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: HGhub-Android
+          path: |
+            src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+            src-tauri/gen/android/app/build/outputs/bundle/**/*.aab
+          if-no-files-found: error
